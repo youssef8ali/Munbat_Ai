@@ -1,78 +1,83 @@
+// lib/features/auth/presentation/pages/forgot_password_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:munbat_ai/core/theme/app_color.dart';
+import 'package:munbat_ai/features/auth/data/repositories/auth_repository.dart';
+import 'package:munbat_ai/features/auth/presentation/pages/reset_password_page.dart';
 import 'package:munbat_ai/features/auth/presentation/widgets/email_sent_view.dart';
 import 'package:munbat_ai/features/auth/presentation/widgets/forgot_password_form.dart';
- 
-// ملاحظة: الباك الحالي مش عنده endpoint لـ forgot password
-// لما يضيفوا الـ endpoint هتضيفه في ApiService و AuthRepository
-// دلوقتي بنعمل UI flow صح وجاهز للربط
- 
+
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
- 
+
   @override
   State<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
 }
- 
+
 class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
+  final _authRepository = AuthRepository();
+
   bool _isLoading = false;
   bool _emailSent = false;
- 
+
   @override
   void dispose() {
     _emailController.dispose();
     super.dispose();
   }
- 
+
   Future<void> _handleResetPassword() async {
     if (!_formKey.currentState!.validate()) return;
- 
+
     setState(() => _isLoading = true);
- 
-    // TODO: لما الباك يضيف endpoint الـ forgot password
-    // هتبقى كده:
-    //
-    // final result = await _authRepository.forgotPassword(
-    //   email: _emailController.text.trim(),
-    // );
-    //
-    // if (result.success) {
-    //   setState(() { _isLoading = false; _emailSent = true; });
-    // } else {
-    //   setState(() => _isLoading = false);
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     SnackBar(content: Text(result.message!), backgroundColor: Colors.red),
-    //   );
-    // }
- 
-    // مؤقتاً: نعمل simulate للـ UI
-    await Future.delayed(const Duration(seconds: 2));
-    if (!mounted) return;
-    setState(() {
-      _isLoading = false;
-      _emailSent = true;
-    });
-  }
- 
-  Future<void> _handleResendEmail() async {
-    setState(() => _isLoading = true);
- 
-    // TODO: نفس الـ endpoint هيتبعت تاني
-    await Future.delayed(const Duration(seconds: 2));
- 
+
+    final result = await _authRepository.forgotPassword(
+      email: _emailController.text.trim(),
+    );
+
     if (!mounted) return;
     setState(() => _isLoading = false);
- 
+
+    if (result.success) {
+      // ✅ نعرض شاشة "Check Your Email"
+      setState(() => _emailSent = true);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.message ?? 'Something went wrong'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleResendEmail() async {
+    setState(() => _isLoading = true);
+
+    final result = await _authRepository.forgotPassword(
+      email: _emailController.text.trim(),
+    );
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Reset link has been resent to your email'),
-        backgroundColor: Colors.green,
+      SnackBar(
+        content: Text(result.message ?? 'Reset link resent'),
+        backgroundColor: result.success ? Colors.green : Colors.red,
       ),
     );
   }
- 
+
+  void _goToResetPassword() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ResetPasswordPage()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -93,7 +98,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   email: _emailController.text,
                   isLoading: _isLoading,
                   onResend: _handleResendEmail,
-                  onBackToLogin: () => Navigator.pop(context),
+                  // ✅ زر "Enter Reset Code" بدل Back to Login عشان يكمل الـ flow
+                  onBackToLogin: _goToResetPassword,
                 )
               : ForgotPasswordForm(
                   formKey: _formKey,

@@ -1,4 +1,3 @@
-
 // Remember Me and Forgot Password Row Widget
 import 'package:flutter/material.dart';
 import 'package:munbat_ai/core/theme/app_color.dart';
@@ -18,8 +17,8 @@ class RememberAndForgotRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
@@ -30,13 +29,12 @@ class RememberAndForgotRow extends StatelessWidget {
                 value: keepMeSignedIn,
                 onChanged: (value) => onKeepMeSignedInChanged(value ?? false),
                 activeColor: AppColors.primary,
-               side: const BorderSide(
+                side: const BorderSide(
                   color: AppColors.greyLight,
                   width: 1,
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(4),
-               
                 ),
               ),
             ),
@@ -49,20 +47,23 @@ class RememberAndForgotRow extends StatelessWidget {
             ),
           ],
         ),
-        TextButton(
-          onPressed: () {
-            context.push(ForgotPasswordPage());
-          },
-          style: TextButton.styleFrom(
-            padding: EdgeInsets.zero,
-            minimumSize: const Size(0, 0),
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
-          child: Text(
-            'Forgot your password?',
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textSecondary,
-              decoration: TextDecoration.underline,
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton(
+            onPressed: () {
+              context.push(ForgotPasswordPage());
+            },
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.zero,
+              minimumSize: const Size(0, 0),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(
+              'Forgot your password?',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+                decoration: TextDecoration.underline,
+              ),
             ),
           ),
         ),

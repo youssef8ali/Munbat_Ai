@@ -1,4 +1,5 @@
-// Camera Preview View
+// lib/features/diagnosis/presentation/widgets/camera_preview_view.dart
+
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:munbat_ai/core/constants/app_constants.dart';
@@ -14,6 +15,8 @@ class CameraPreviewView extends StatelessWidget {
   final Function(bool) onPhotoModeChanged;
   final VoidCallback onTakePicture;
   final VoidCallback onPickFromGallery;
+  final VoidCallback onSwitchCamera; // ✅ جديد
+  final bool hasFrontCamera;         // ✅ جديد
   final VoidCallback onClose;
 
   const CameraPreviewView({
@@ -23,11 +26,12 @@ class CameraPreviewView extends StatelessWidget {
     required this.onPhotoModeChanged,
     required this.onTakePicture,
     required this.onPickFromGallery,
+    required this.onSwitchCamera,
     required this.onClose,
+    this.hasFrontCamera = true,
   });
 
-
-static void _showInfoDialog(BuildContext context) {
+  static void _showInfoDialog(BuildContext context) {
     showInfoDialog(
       context: context,
       title: 'Diagnosis Tips',
@@ -40,7 +44,7 @@ static void _showInfoDialog(BuildContext context) {
       onPressed: () => Navigator.pop(context),
     );
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -57,22 +61,21 @@ static void _showInfoDialog(BuildContext context) {
           // Content
           Column(
             children: [
-              // Top controls
               CameraTopBar(
                 onClose: onClose,
                 onShowInfo: () => _showInfoDialog(context),
               ),
               const Spacer(),
-              // Frame overlay
               CameraFrameOverlay(),
               const Spacer(),
-              // Instruction text
               CameraInstructionText(),
               SizedBox(height: AppConstants.paddingLarge),
-              // Bottom controls
+              // ✅ بنمرر onSwitchCamera و hasFrontCamera
               CameraBottomControls(
                 onTakePicture: onTakePicture,
                 onPickFromGallery: onPickFromGallery,
+                onSwitchCamera: onSwitchCamera,
+                hasFrontCamera: hasFrontCamera,
               ),
             ],
           ),
@@ -81,3 +84,5 @@ static void _showInfoDialog(BuildContext context) {
     );
   }
 }
+
+

@@ -1,6 +1,7 @@
 // lib/features/diagnosis/data/models/scan_result_model.dart
+import 'package:munbat_ai/features/store/data/models/store_models.dart';
 
-//  نبتة المرض - من disease_ids array
+// ─── Disease ──────────────────────────────────────────────────────────────
 class DiseaseModel {
   final String id;
   final String name;
@@ -21,7 +22,66 @@ class DiseaseModel {
   }
 }
 
-//  الـ PlantScan object
+// ─── Treatment ────────────────────────────────────────────────────────────
+class TreatmentModel {
+  final String id;
+  final String name;
+  final String instructions;
+  final List<String> diseaseIds;
+
+  TreatmentModel({
+    required this.id,
+    required this.name,
+    required this.instructions,
+    required this.diseaseIds,
+  });
+
+  factory TreatmentModel.fromJson(Map<String, dynamic> json) {
+    final ids = json['disease_ids'] as List? ?? [];
+    return TreatmentModel(
+      id: json['_id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      instructions: json['instructions']?.toString() ?? '',
+      // ممكن تيجي string IDs أو objects فيها _id/name حسب الـ endpoint
+      diseaseIds: ids
+          .map((e) => e is Map ? (e['_id']?.toString() ?? '') : e.toString())
+          .where((e) => e.isNotEmpty)
+          .toList(),
+    );
+  }
+}
+
+// ─── Detected Disease (disease + its treatment + recommended products) ─────
+class DetectedDiseaseModel {
+  final DiseaseModel disease;
+  final TreatmentModel? treatment;
+  final List<ProductModel> products;
+  final bool hasProducts;
+
+  DetectedDiseaseModel({
+    required this.disease,
+    required this.treatment,
+    required this.products,
+    required this.hasProducts,
+  });
+
+  factory DetectedDiseaseModel.fromJson(Map<String, dynamic> json) {
+    return DetectedDiseaseModel(
+      disease: DiseaseModel.fromJson(
+        json['disease'] as Map<String, dynamic>? ?? {},
+      ),
+      treatment: json['treatment'] != null
+          ? TreatmentModel.fromJson(json['treatment'] as Map<String, dynamic>)
+          : null,
+      products: (json['products'] as List? ?? [])
+          .map((e) => ProductModel.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      hasProducts: json['hasProducts'] as bool? ?? false,
+    );
+  }
+}
+
+// ─── PlantScan ────────────────────────────────────────────────────────────
 class PlantScan {
   final String id;
   final String imageUrl;
@@ -50,6 +110,7 @@ class PlantScan {
       imageUrl: json['image_url']?.toString() ?? '',
       status: json['status']?.toString() ?? '',
       diseases: diseaseList
+          .whereType<Map>()
           .map((e) => DiseaseModel.fromJson(e as Map<String, dynamic>))
           .toList(),
       scanDate: DateTime.tryParse(json['scan_date']?.toString() ?? '') ??
@@ -58,102 +119,48 @@ class PlantScan {
   }
 }
 
-//  الـ Treatment object
-class TreatmentModel {
-  final String id;
-  final String name;
-  final String instructions;
-  final List<String> diseaseIds;
-
-  TreatmentModel({
-    required this.id,
-    required this.name,
-    required this.instructions,
-    required this.diseaseIds,
-  });
-
-  factory TreatmentModel.fromJson(Map<String, dynamic> json) {
-    final ids = json['disease_ids'] as List? ?? [];
-    return TreatmentModel(
-      id: json['_id']?.toString() ?? '',
-      name: json['name']?.toString() ?? '',
-      instructions: json['instructions']?.toString() ?? '',
-      diseaseIds: ids.map((e) => e.toString()).toList(),
-    );
-  }
-}
-
-//  الـ Product object
-class ProductModel {
-  final String id;
-  final String name;
-  final String description;
-  final double price;
-  final int quantity;
-  final String imageUrl;
-  final String treatmentId;
-
-  ProductModel({
-    required this.id,
-    required this.name,
-    required this.description,
-    required this.price,
-    required this.quantity,
-    required this.imageUrl,
-    required this.treatmentId,
-  });
-
-  factory ProductModel.fromJson(Map<String, dynamic> json) {
-    return ProductModel(
-      id: json['_id']?.toString() ?? '',
-      name: json['name']?.toString() ?? '',
-      description: json['description']?.toString() ?? '',
-      price: (json['price'] ?? 0).toDouble(),
-      quantity: (json['quantity'] ?? 0).toInt(),
-      imageUrl: json['image_url']?.toString() ?? '',
-      treatmentId: json['treatment_id']?.toString() ?? '',
-    );
-  }
-}
-
-//  الـ Response الكامل
+// ─── Full Scan Response ─────────────────────────────────────────────────────
 class ScanResultModel {
   final PlantScan plantScan;
-  final List<TreatmentModel> treatments;
-  final List<ProductModel> products;
+  final List<DetectedDiseaseModel> detectedDiseases;
+  final List<TreatmentModel> treatments; // flattened (لكل disease treatment واحد)
+  final List<ProductModel> products; // flattened من كل detectedDiseases
 
   ScanResultModel({
     required this.plantScan,
+    required this.detectedDiseases,
     required this.treatments,
     required this.products,
   });
 
   factory ScanResultModel.fromJson(Map<String, dynamic> json) {
-    // لو جاي من scanImage: { "data": { "PlantScan": {}, "treatments": [], "Products": [] } }
-    if (json.containsKey('data') &&
-        json['data'] is Map<String, dynamic> &&
-        (json['data'] as Map<String, dynamic>).containsKey('PlantScan')) {
-      final data = json['data'] as Map<String, dynamic>;
-      return ScanResultModel(
-        plantScan:
-            PlantScan.fromJson(data['PlantScan'] as Map<String, dynamic>),
-        treatments: (data['treatments'] as List? ?? [])
-            .map((e) => TreatmentModel.fromJson(e as Map<String, dynamic>))
-            .toList(),
-        products: (data['Products'] as List? ?? [])
-            .map((e) => ProductModel.fromJson(e as Map<String, dynamic>))
-            .toList(),
-      );
-    }
+    // لو الـ response جاي بشكل { "message":..., "data": {...} } نفك data
+    final Map<String, dynamic> data =
+        (json['data'] is Map<String, dynamic>) ? json['data'] as Map<String, dynamic> : json;
 
-    // لو جاي من getAllScans: كل item هو الـ scan نفسه مع treatments جوه
-    // { "_id": "...", "image_url": "...", "disease_ids": [...], "treatments": [...] }
+    // الحالتين الممكنتين:
+    // 1) scanImage / getScanById -> data = { "scan": {...}, "detectedDiseases": [...] , "summary": {...} }
+    // 2) getAllScans (كل عنصر) -> data = { _id, image_url, disease_ids, ..., "detectedDiseases": [...] }
+    final Map<String, dynamic> scanJson =
+        (data['scan'] is Map<String, dynamic>) ? data['scan'] as Map<String, dynamic> : data;
+
+    final List detectedRaw = (data['detectedDiseases'] as List?) ??
+        (scanJson['detectedDiseases'] as List?) ??
+        [];
+
+    final detected = detectedRaw
+        .whereType<Map>()
+        .map((e) => DetectedDiseaseModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+
     return ScanResultModel(
-      plantScan: PlantScan.fromJson(json),
-      treatments: (json['treatments'] as List? ?? [])
-          .map((e) => TreatmentModel.fromJson(e as Map<String, dynamic>))
+      plantScan: PlantScan.fromJson(scanJson),
+      detectedDiseases: detected,
+      treatments: detected
+          .where((d) => d.treatment != null)
+          .map((d) => d.treatment!)
           .toList(),
-      products: [],
+      products: detected.expand((d) => d.products).toList(),
     );
   }
 }

@@ -1,13 +1,46 @@
-
 // lib/features/settings/presentation/pages/help_support_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:munbat_ai/core/theme/app_color.dart';
 import 'package:munbat_ai/features/settings/presentation/pages/faq_page.dart';
 import 'package:munbat_ai/features/settings/presentation/widgets/section_header_settings.dart';
 import 'package:munbat_ai/features/settings/presentation/widgets/setting_tile.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 
 class HelpSupportPage extends StatelessWidget {
   const HelpSupportPage({super.key});
+
+  static const _supportEmail = 'manbutsystem@gmail.com';
+  static const _supportPhone = '01283360357';
+
+  Future<void> _launchEmail(BuildContext context, {String? subject, String? body}) async {
+    final subjectEncoded = Uri.encodeComponent(subject ?? '');
+    final bodyEncoded = Uri.encodeComponent(body ?? '');
+    final url = 'mailto:$_supportEmail?subject=$subjectEncoded&body=$bodyEncoded';
+    try {
+      await launchUrlString(url);
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open email app')),
+        );
+      }
+    }
+  }
+
+  Future<void> _launchPhone(BuildContext context) async {
+    final uri = Uri(scheme: 'tel', path: _supportPhone);
+    try {
+      await launchUrl(uri);
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open phone app')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +55,10 @@ class HelpSupportPage extends StatelessWidget {
         ),
         title: Text(
           'Help & Support',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+          style: Theme.of(context)
+              .textTheme
+              .headlineSmall
+              ?.copyWith(fontWeight: FontWeight.w700),
         ),
         centerTitle: true,
       ),
@@ -30,47 +66,30 @@ class HelpSupportPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
 
-            // Get Help Section
             SectionHeader(title: 'GET HELP'),
-
-            SettingTile(
-              icon: Icons.chat_bubble,
-              iconColor: AppColors.primary,
-              title: 'Chat with Support',
-              subtitle: 'Get instant help from our team',
-              trailing: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
-              onTap: () {
-                // Navigate to support chat
-              },
-            ),
 
             SettingTile(
               icon: Icons.email,
               iconColor: AppColors.primary,
               title: 'Email Support',
-              subtitle: 'support@Munbat.com',
+              subtitle: _supportEmail,
               trailing: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
-              onTap: () {
-                // Open email client
-              },
+              onTap: () => _launchEmail(context, subject: 'Support Request'),
             ),
 
             SettingTile(
               icon: Icons.phone,
               iconColor: AppColors.primary,
               title: 'Call Us',
-              subtitle: '+20 100 6978 914',
+              subtitle: _supportPhone,
               trailing: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
-              onTap: () {
-                // Make phone call
-              },
+              onTap: () => _launchPhone(context),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
 
-            // Resources Section
             SectionHeader(title: 'RESOURCES'),
 
             SettingTile(
@@ -79,12 +98,10 @@ class HelpSupportPage extends StatelessWidget {
               title: 'FAQ',
               subtitle: 'Find answers to common questions',
               trailing: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const FAQPage()),
-                );
-              },
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const FAQPage()),
+              ),
             ),
 
             SettingTile(
@@ -93,48 +110,12 @@ class HelpSupportPage extends StatelessWidget {
               title: 'User Guide',
               subtitle: 'Learn how to use the app',
               trailing: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
-              onTap: () {
-                // Navigate to user guide
-              },
+              onTap: () => _showUserGuideDialog(context),
             ),
 
-            SettingTile(
-              icon: Icons.video_library,
-              iconColor: const Color(0xFF5D9CEC),
-              title: 'Video Tutorials',
-              subtitle: 'Watch step-by-step guides',
-              trailing: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
-              onTap: () {
-                // Navigate to video tutorials
-              },
-            ),
+            const SizedBox(height: 12),
 
-            SettingTile(
-              icon: Icons.article,
-              iconColor: const Color(0xFF5D9CEC),
-              title: 'Plant Care Articles',
-              subtitle: 'Read expert plant care tips',
-              trailing: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
-              onTap: () {
-                // Navigate to articles
-              },
-            ),
-
-            const SizedBox(height: 24),
-
-            // Feedback Section
             SectionHeader(title: 'FEEDBACK'),
-
-            SettingTile(
-              icon: Icons.rate_review,
-              iconColor: const Color(0xFFFFB74D),
-              title: 'Rate the App',
-              subtitle: 'Share your experience',
-              trailing: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
-              onTap: () {
-             
-              },
-            ),
 
             SettingTile(
               icon: Icons.feedback,
@@ -142,9 +123,7 @@ class HelpSupportPage extends StatelessWidget {
               title: 'Send Feedback',
               subtitle: 'Help us improve',
               trailing: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
-              onTap: () {
-                _showFeedbackDialog(context);
-              },
+              onTap: () => _showFeedbackDialog(context),
             ),
 
             SettingTile(
@@ -153,14 +132,11 @@ class HelpSupportPage extends StatelessWidget {
               title: 'Report a Bug',
               subtitle: 'Let us know about issues',
               trailing: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
-              onTap: () {
-                _showBugReportDialog(context);
-              },
+              onTap: () => _showBugReportDialog(context),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
 
-            // About Section
             SectionHeader(title: 'ABOUT'),
 
             SettingTile(
@@ -169,37 +145,87 @@ class HelpSupportPage extends StatelessWidget {
               title: 'About Munbat AI',
               subtitle: 'Version 1.0.0',
               trailing: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
-              onTap: () {
-                _showAboutDialog(context);
-              },
+              onTap: () => _showAboutDialog(context),
             ),
 
-            SettingTile(
-              icon: Icons.new_releases,
-              iconColor: const Color(0xFF9575CD),
-              title: 'What\'s New',
-              subtitle: 'Latest updates and features',
-              trailing: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
-              onTap: () {
-                // Show changelog
-              },
-            ),
-
-            const SizedBox(height: 100),
+            const SizedBox(height: 40),
           ],
         ),
       ),
     );
   }
 
-  void _showFeedbackDialog(BuildContext context) {
+  void _showUserGuideDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('User Guide'),
+        content: const SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _GuideStep(
+                number: '1',
+                title: 'Diagnose a Plant',
+                description:
+                    'Go to the Diagnosis tab, take or upload a photo of your plant, and let our AI analyze it instantly.',
+              ),
+              _GuideStep(
+                number: '2',
+                title: 'Chat with AI',
+                description:
+                    'Use the AI Chat feature to ask any plant-related questions. Our assistant answers only plant care, diseases, and treatment topics.',
+              ),
+              _GuideStep(
+                number: '3',
+                title: 'Browse the Store',
+                description:
+                    'Visit the Store tab to find treatments and products recommended for your plant\'s condition.',
+              ),
+              _GuideStep(
+                number: '4',
+                title: 'Place an Order',
+                description:
+                    'Add products to your cart, go to checkout, enter your shipping address and phone number, then place your order.',
+              ),
+              _GuideStep(
+                number: '5',
+                title: 'Track Your Orders',
+                description:
+                    'Check your order history anytime from Profile → My Order.',
+              ),
+              _GuideStep(
+                number: '6',
+                title: 'View Diagnosis History',
+                description:
+                    'All your past diagnoses are saved under Profile → Diagnosis History.',
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Got it'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFeedbackDialog(BuildContext context) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Send Feedback'),
-        content: const TextField(
+        content: TextField(
+          controller: controller,
           maxLines: 5,
-          decoration: InputDecoration(
+          decoration: const InputDecoration(
             hintText: 'Tell us what you think...',
             border: OutlineInputBorder(),
           ),
@@ -210,10 +236,14 @@ class HelpSupportPage extends StatelessWidget {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
+              final text = controller.text.trim();
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Thank you for your feedback!')),
+              if (text.isEmpty) return;
+              await _launchEmail(
+                context,
+                subject: 'App Feedback',
+                body: text,
               );
             },
             child: const Text('Send'),
@@ -224,23 +254,28 @@ class HelpSupportPage extends StatelessWidget {
   }
 
   void _showBugReportDialog(BuildContext context) {
+    final titleController = TextEditingController();
+    final descController = TextEditingController();
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Report a Bug'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const TextField(
-              decoration: InputDecoration(
+            TextField(
+              controller: titleController,
+              decoration: const InputDecoration(
                 labelText: 'Bug Title',
                 border: OutlineInputBorder(),
               ),
             ),
-            const SizedBox(height: 16),
-            const TextField(
+            const SizedBox(height: 12),
+            TextField(
+              controller: descController,
               maxLines: 4,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Description',
                 hintText: 'Describe the issue...',
                 border: OutlineInputBorder(),
@@ -254,13 +289,18 @@ class HelpSupportPage extends StatelessWidget {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
+              final title = titleController.text.trim();
+              final desc = descController.text.trim();
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Bug report submitted. Thank you!')),
+              if (title.isEmpty && desc.isEmpty) return;
+              await _launchEmail(
+                context,
+                subject: 'Bug Report: $title',
+                body: 'Bug Title: $title\n\nDescription:\n$desc',
               );
             },
-            child: const Text('Submit'),
+            child: const Text('Send'),
           ),
         ],
       ),
@@ -270,27 +310,26 @@ class HelpSupportPage extends StatelessWidget {
   void _showAboutDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('About Munbat AI'),
         content: const SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                'Munbat AI',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 8),
-              Text('Version 1.0.2'),
-              SizedBox(height: 16),
+              Text('Munbat AI',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              SizedBox(height: 6),
+              Text('Version 1.0.0'),
+              SizedBox(height: 12),
               Text(
                 'Munbat AI uses advanced artificial intelligence to help you '
                 'identify and treat plant diseases, pests, and other issues.\n\n'
                 'Our mission is to make plant care accessible to everyone through '
                 'the power of AI technology.',
               ),
-              SizedBox(height: 16),
+              SizedBox(height: 12),
               Text('© 2026 Munbat AI. All rights reserved.'),
             ],
           ),
@@ -306,3 +345,55 @@ class HelpSupportPage extends StatelessWidget {
   }
 }
 
+class _GuideStep extends StatelessWidget {
+  final String number;
+  final String title;
+  final String description;
+
+  const _GuideStep({
+    required this.number,
+    required this.title,
+    required this.description,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            decoration: const BoxDecoration(
+              color: AppColors.primary,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(number,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13)),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 2),
+                Text(description,
+                    style: const TextStyle(
+                        color: AppColors.textSecondary, fontSize: 13)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

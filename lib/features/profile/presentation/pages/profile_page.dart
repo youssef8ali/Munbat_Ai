@@ -17,7 +17,6 @@ import 'package:munbat_ai/features/settings/presentation/pages/help_support_page
 import 'package:munbat_ai/features/settings/presentation/pages/my_order.dart';
 import 'package:munbat_ai/features/settings/presentation/pages/privacy_security_page.dart';
 
-// ✅ ProfilePage لما تُفتح من غير MainNavigation (مثلاً direct push)
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
@@ -30,17 +29,12 @@ class ProfilePage extends StatelessWidget {
   }
 }
 
-// ✅ ProfilePageView هي الـ UI الحقيقية — بتاخد الـ Cubit من الـ parent
 class ProfilePageView extends StatelessWidget {
   const ProfilePageView({super.key});
 
   Future<void> _logout(BuildContext context) async {
-    // ✅ مسح الـ token
     await ApiService().clearToken();
-
     if (!context.mounted) return;
-
-    // ✅ روح للـ Login وامسح كل الـ stack
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => LoginPage()),
@@ -48,23 +42,38 @@ class ProfilePageView extends StatelessWidget {
     );
   }
 
+  // ✅ بيعرض صورة السيرفر لو موجودة، أو الأيقونة الافتراضية
+  Widget _buildProfileAvatar(UserProfileModel profile) {
+    final hasImage = profile.imageUrl.isNotEmpty;
+    return CircleAvatar(
+      backgroundColor: AppColors.greyLight,
+      backgroundImage: hasImage ? NetworkImage(profile.imageUrl) : null,
+      onBackgroundImageError: hasImage
+          ? (_, __) {} // silent fallback لو الصورة فشلت تتحمل
+          : null,
+      child: hasImage
+          ? null
+          : const Icon(Icons.person, size: 60, color: AppColors.textSecondary),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-   appBar: AppBar(
-  backgroundColor: AppColors.white,
-  elevation: 0,
-  automaticallyImplyLeading: false, // ✅ مفيش back button
-  title: Text(
-    'Profile',
-    style: Theme.of(context)
-        .textTheme
-        .headlineSmall
-        ?.copyWith(fontWeight: FontWeight.w700),
-  ),
-  centerTitle: true,
-),
+      appBar: AppBar(
+        backgroundColor: AppColors.white,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        title: Text(
+          'Profile',
+          style: Theme.of(context)
+              .textTheme
+              .headlineSmall
+              ?.copyWith(fontWeight: FontWeight.w700),
+        ),
+        centerTitle: true,
+      ),
       body: BlocConsumer<ProfileCubit, ProfileState>(
         listener: (context, state) {
           if (state is ProfileUpdateSuccess) {
@@ -126,7 +135,7 @@ class ProfilePageView extends StatelessWidget {
               children: [
                 const SizedBox(height: 32),
 
-                // Profile Picture
+                // ✅ Profile Picture — بيعرض صورة السيرفر لو موجودة
                 Stack(
                   children: [
                     Container(
@@ -143,10 +152,8 @@ class ProfilePageView extends StatelessWidget {
                           ),
                         ],
                       ),
-                      child: const CircleAvatar(
-                        backgroundColor: AppColors.greyLight,
-                        child: Icon(Icons.person,
-                            size: 60, color: AppColors.textSecondary),
+                      child: ClipOval(
+                        child: _buildProfileAvatar(profile),
                       ),
                     ),
                     Positioned(
@@ -168,7 +175,6 @@ class ProfilePageView extends StatelessWidget {
 
                 const SizedBox(height: 16),
 
-                // Name
                 Text(
                   profile.name.isNotEmpty ? profile.name : 'No Name',
                   style: AppTextStyles.h1.copyWith(fontSize: 24),
@@ -238,6 +244,14 @@ class ProfilePageView extends StatelessWidget {
                         iconColor: AppColors.primary,
                         onTap: () => context.push(DiagnosisHistoryPage()),
                       ),
+                         const SizedBox(height: 12),
+                      _ProfileMenuItem(
+                        icon: Icons.shopping_bag_outlined,
+                        title: 'My Order',
+                        iconBgColor: AppColors.primary.withOpacity(0.1),
+                        iconColor: AppColors.primary,
+                        onTap: () => context.push(MyOrderPage()),
+                      ),
                     ],
                   ),
                 ),
@@ -259,18 +273,8 @@ class ProfilePageView extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      _ProfileMenuItem(
-                        icon: Icons.notifications,
-                        title: 'Notifications',
-                        iconBgColor: AppColors.greyLight,
-                        iconColor: AppColors.textSecondary,
-                        trailing: Switch(
-                          value: true,
-                          onChanged: (_) {},
-                          activeColor: AppColors.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
+                   
+                      
                       _ProfileMenuItem(
                         icon: Icons.security,
                         title: 'Privacy & Security',
@@ -278,14 +282,7 @@ class ProfilePageView extends StatelessWidget {
                         iconColor: AppColors.textSecondary,
                         onTap: () => context.push(PrivacySecurityPage()),
                       ),
-                      const SizedBox(height: 12),
-                      _ProfileMenuItem(
-                        icon: Icons.shopping_bag_outlined,
-                        title: 'My Order',
-                        iconBgColor: AppColors.greyLight,
-                        iconColor: AppColors.textSecondary,
-                        onTap: () => context.push(MyOrderPage()),
-                      ),
+                   
                       const SizedBox(height: 12),
                       _ProfileMenuItem(
                         icon: Icons.help_outline,
@@ -300,7 +297,6 @@ class ProfilePageView extends StatelessWidget {
 
                 const SizedBox(height: 30),
 
-                // ✅ Logout صح — بيمسح الـ token ويروح للـ Login
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: TextButton.icon(

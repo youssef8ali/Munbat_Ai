@@ -13,20 +13,9 @@ class DiagnosisTitleRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(
-          child: Text(
-            diseaseName,
-            style: AppTextStyles.h2,
-          ),
-        ),
-        IconButton(
-          icon: const Icon(Icons.share),
-          onPressed: () {},
-        ),
-      ],
+    return Text(
+      diseaseName,
+      style: AppTextStyles.h2,
     );
   }
 }

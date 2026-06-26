@@ -7,13 +7,10 @@ import 'package:munbat_ai/features/profile/data/models/user_profile_model.dart';
 class ProfileRepository {
   final ApiService _apiService = ApiService();
 
-  // GET /user/profile
   Future<UserProfileModel?> getProfile() async {
     try {
       final response = await _apiService.getProfile();
       debugPrint('GET PROFILE RESPONSE => ${response.data}');
-
-      // response: { "message": "...", "data": { "_id": "...", "name": "...", ... } }
       final data = response.data['data'] as Map<String, dynamic>? ?? {};
       return UserProfileModel.fromJson(data);
     } catch (e) {
@@ -22,20 +19,22 @@ class ProfileRepository {
     }
   }
 
-  // PUT /user/profile
   Future<UserProfileModel?> updateProfile({
     String? name,
     String? address,
     String? phone,
+    String? imagePath,
+    bool removeImage = false, // ✅ جديد
   }) async {
     try {
       final response = await _apiService.updateProfile(
         name: name,
         address: address,
         phone: phone,
+        imagePath: imagePath,
+        removeImage: removeImage, // ✅ تمريرها
       );
       debugPrint('UPDATE PROFILE RESPONSE => ${response.data}');
-
       final data = response.data['data'] as Map<String, dynamic>? ?? {};
       return UserProfileModel.fromJson(data);
     } catch (e) {

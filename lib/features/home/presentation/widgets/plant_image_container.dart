@@ -18,11 +18,13 @@ class PlantImageContainer extends StatelessWidget {
     required this.statusIcon,
   });
 
+  bool get _isNetwork =>
+      imageUrl.startsWith('http://') || imageUrl.startsWith('https://');
+
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        image: DecorationImage(image: AssetImage(imageUrl),fit: BoxFit.cover),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -32,10 +34,32 @@ class PlantImageContainer extends StatelessWidget {
           ],
         ),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-
       ),
+      clipBehavior: Clip.antiAlias,
       child: Stack(
         children: [
+          Positioned.fill(
+            child: imageUrl.isEmpty
+                ? const Icon(Icons.eco,
+                    color: AppColors.textSecondary, size: 40)
+                : _isNetwork
+                    ? Image.network(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const Icon(
+                            Icons.eco,
+                            color: AppColors.textSecondary,
+                            size: 40),
+                      )
+                    : Image.asset(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const Icon(
+                            Icons.eco,
+                            color: AppColors.textSecondary,
+                            size: 40),
+                      ),
+          ),
           Positioned(
             top: 12,
             right: 12,

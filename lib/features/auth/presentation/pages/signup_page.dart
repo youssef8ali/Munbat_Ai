@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:munbat_ai/core/theme/app_color.dart';
-import 'package:munbat_ai/core/utils/app_extensions.dart';
 import 'package:munbat_ai/features/auth/data/repositories/auth_repository.dart';
 import 'package:munbat_ai/features/auth/presentation/widgets/header_section.dart';
 import 'package:munbat_ai/features/auth/presentation/widgets/signup_form_card.dart';
 import 'package:munbat_ai/features/home/presentation/pages/main_navigation_page.dart';
- 
+
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
- 
+
   @override
   State<SignUpPage> createState() => _SignUpPageState();
 }
- 
+
 class _SignUpPageState extends State<SignUpPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
@@ -24,9 +23,9 @@ class _SignUpPageState extends State<SignUpPage> {
   bool _isConfirmPasswordVisible = false;
   bool _agreeToTerms = false;
   bool _isLoading = false;
- 
+
   final _authRepository = AuthRepository();
- 
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -36,10 +35,10 @@ class _SignUpPageState extends State<SignUpPage> {
     _confirmPasswordController.dispose();
     super.dispose();
   }
- 
+
   Future<void> _handleSignUp() async {
     if (!_formKey.currentState!.validate()) return;
- 
+
     if (!_agreeToTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -49,18 +48,18 @@ class _SignUpPageState extends State<SignUpPage> {
       );
       return;
     }
- 
+
     setState(() => _isLoading = true);
- 
+
     final result = await _authRepository.register(
       name: _nameController.text.trim(),
       email: _emailController.text.trim(),
       password: _passwordController.text,
     );
- 
+
     if (!mounted) return;
     setState(() => _isLoading = false);
- 
+
     if (result.success) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -68,8 +67,11 @@ class _SignUpPageState extends State<SignUpPage> {
           backgroundColor: Colors.green,
         ),
       );
-      // انتقل للصفحة الرئيسية
-      context.push(const MainNavigationPage());
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const MainNavigationPage()),
+        (route) => false,
+      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -79,51 +81,42 @@ class _SignUpPageState extends State<SignUpPage> {
       );
     }
   }
- 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       body: SingleChildScrollView(
-        child: Stack(
+        child: Column(
           children: [
             const HeaderSection(),
-            Positioned(
-              top: context.height * 0.3,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    SignUpFormCard(
-                      formKey: _formKey,
-                      nameController: _nameController,
-                      emailController: _emailController,
-                      phoneController: _phoneController,
-                      passwordController: _passwordController,
-                      confirmPasswordController: _confirmPasswordController,
-                      isPasswordVisible: _isPasswordVisible,
-                      isConfirmPasswordVisible: _isConfirmPasswordVisible,
-                      agreeToTerms: _agreeToTerms,
-                      isLoading: _isLoading,
-                      onPasswordVisibilityToggle: () {
-                        setState(() => _isPasswordVisible = !_isPasswordVisible);
-                      },
-                      onConfirmPasswordVisibilityToggle: () {
-                        setState(
-                            () => _isConfirmPasswordVisible = !_isConfirmPasswordVisible);
-                      },
-                      onAgreeToTermsChanged: (value) {
-                        setState(() => _agreeToTerms = value);
-                      },
-                      onSignUp: _handleSignUp,
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-                ),
+            Transform.translate(
+              offset: const Offset(0, -40),
+              child: SignUpFormCard(
+                formKey: _formKey,
+                nameController: _nameController,
+                emailController: _emailController,
+                phoneController: _phoneController,
+                passwordController: _passwordController,
+                confirmPasswordController: _confirmPasswordController,
+                isPasswordVisible: _isPasswordVisible,
+                isConfirmPasswordVisible: _isConfirmPasswordVisible,
+                agreeToTerms: _agreeToTerms,
+                isLoading: _isLoading,
+                onPasswordVisibilityToggle: () {
+                  setState(() => _isPasswordVisible = !_isPasswordVisible);
+                },
+                onConfirmPasswordVisibilityToggle: () {
+                  setState(() =>
+                      _isConfirmPasswordVisible = !_isConfirmPasswordVisible);
+                },
+                onAgreeToTermsChanged: (value) {
+                  setState(() => _agreeToTerms = value);
+                },
+                onSignUp: _handleSignUp,
               ),
             ),
+            const SizedBox(height: 24),
           ],
         ),
       ),

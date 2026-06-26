@@ -54,26 +54,27 @@ class PlantCardWidget extends StatelessWidget {
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: PlantImageContainer(
-                imageUrl: plant.imageUrl,
-                status: plant.status,
-                statusColor: _getStatusColor(plant.status),
-                statusIcon: _getStatusIcon(plant.status),
-              ),
-            ),
-            PlantInfoContainer(
-              name: plant.name,
-              scientificName: plant.scientificName,
-              statusText: plant.statusText,
-              statusColor: _getStatusColor(plant.status),
-              statusIcon: _getStatusIcon(plant.status),
-            ),
-          ],
-        ),
+       // plant_card_widget.dart
+child: Column(
+  crossAxisAlignment: CrossAxisAlignment.start,
+  children: [
+    Expanded(  // الصورة تاخذ باقي المساحة
+      child: PlantImageContainer(
+        imageUrl: plant.imageUrl,
+        status: plant.status,
+        statusColor: _getStatusColor(plant.status),
+        statusIcon: _getStatusIcon(plant.status),
+      ),
+    ),
+    PlantInfoContainer(  // الجزء السفلي بحجم ثابت صغير
+      name: plant.name,
+      scientificName: plant.scientificName,
+      statusText: plant.statusText,
+      statusColor: _getStatusColor(plant.status),
+      statusIcon: _getStatusIcon(plant.status),
+    ),
+  ],
+),
       ),
     );
   }

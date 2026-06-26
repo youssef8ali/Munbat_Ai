@@ -23,7 +23,7 @@ class HeaderWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: AppColors.white,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -34,10 +34,12 @@ class HeaderWidget extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(_getFormattedDate(), style: AppTextStyles.caption),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // ✅ بيقرأ الاسم من ProfileCubit الموجود بالفعل
+                      const Text('🌿', style: TextStyle(fontSize: 20)),
+                      const SizedBox(width: 6),
                       BlocBuilder<ProfileCubit, ProfileState>(
                         builder: (context, state) {
                           String name = 'Gardener';
@@ -48,21 +50,36 @@ class HeaderWidget extends StatelessWidget {
                           } else if (state is ProfileUpdateLoading) {
                             name = state.profile.name;
                           }
-                          return Text(
-                            'Hello, $name ',
-                            style: AppTextStyles.h1,
+                          return Text.rich(
+                            TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: 'Hello, ',
+                                  style: AppTextStyles.h4.copyWith(
+                                    color: AppColors.textSecondary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: name,
+                                  style: AppTextStyles.h4.copyWith(
+                                    color: AppColors.textSecondary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
                           );
                         },
                       ),
-                      const Text('🌿', style: TextStyle(fontSize: 28)),
                     ],
                   ),
                 ],
               ),
-              SvgIcon(assetPath: AppIcons.notification),
+              const Text('🌿', style: TextStyle(fontSize: 20)),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
           const SearchBarWidget(),
         ],
       ),

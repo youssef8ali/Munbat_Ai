@@ -23,9 +23,10 @@ class ProfileCubit extends Cubit<ProfileState> {
     String? name,
     String? address,
     String? phone,
+    String? imagePath,
+    bool removeImage = false, // ✅ جديد
   }) async {
     final current = state;
-    // نفضل الـ profile القديم عشان نعرضه وقت الـ loading
     if (current is ProfileSuccess) {
       emit(ProfileUpdateLoading(current.profile));
     }
@@ -34,12 +35,13 @@ class ProfileCubit extends Cubit<ProfileState> {
       name: name,
       address: address,
       phone: phone,
+      imagePath: imagePath,
+      removeImage: removeImage, // ✅ تمريرها
     );
 
     if (updated != null) {
       emit(ProfileUpdateSuccess(updated));
     } else {
-      // لو فشل، نرجع للـ profile القديم
       if (current is ProfileSuccess) {
         emit(ProfileSuccess(current.profile));
       }

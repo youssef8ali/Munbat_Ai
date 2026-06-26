@@ -1,4 +1,3 @@
-
 // Header Section Widget
 import 'package:flutter/material.dart';
 import 'package:munbat_ai/core/utils/app_extensions.dart';
@@ -9,32 +8,18 @@ class HeaderSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          height: context.height * 0.4,
-          width: context.width,
-          decoration:  BoxDecoration(
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          child: SafeArea(
-            child: Column(
-              children: [
-             
-                const SizedBox(height:55),
-                const AppLogo(),
-              ],
-            ),
-          ),
+    return Container(
+      width: context.width,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primary,
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.only(top: 40, bottom: 24),
+          child: const AppLogo(),
         ),
-        Container(
-          height:context.height * 0.6,
-          decoration: const BoxDecoration(
-            color: Color.fromARGB(255, 247, 250, 250),
-          ),
-         
-        ),
-      ],
+      ),
     );
   }
 }

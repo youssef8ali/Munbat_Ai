@@ -7,6 +7,7 @@ class UserProfileModel {
   final String role;
   final String address;
   final String phone;
+  final String imageUrl; // ✅ جديد
   final DateTime? createdAt;
 
   UserProfileModel({
@@ -16,6 +17,7 @@ class UserProfileModel {
     required this.role,
     required this.address,
     required this.phone,
+    this.imageUrl = '',
     this.createdAt,
   });
 
@@ -27,6 +29,7 @@ class UserProfileModel {
       role: json['role']?.toString() ?? 'user',
       address: json['address']?.toString() ?? '',
       phone: json['phone']?.toString() ?? '',
+      imageUrl: json['image_url']?.toString() ?? '', // ✅ جديد
       createdAt: DateTime.tryParse(json['created_at']?.toString() ?? ''),
     );
   }
@@ -38,12 +41,14 @@ class UserProfileModel {
         'role': role,
         'address': address,
         'phone': phone,
+        'image_url': imageUrl, // ✅ جديد
       };
 
   UserProfileModel copyWith({
     String? name,
     String? address,
     String? phone,
+    String? imageUrl, // ✅ جديد
   }) {
     return UserProfileModel(
       id: id,
@@ -52,6 +57,7 @@ class UserProfileModel {
       role: role,
       address: address ?? this.address,
       phone: phone ?? this.phone,
+      imageUrl: imageUrl ?? this.imageUrl, // ✅ جديد
       createdAt: createdAt,
     );
   }

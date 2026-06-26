@@ -1,9 +1,7 @@
 // lib/features/auth/presentation/pages/login_page.dart
 
 import 'package:flutter/material.dart';
-import 'package:munbat_ai/core/services/api_service.dart';
 import 'package:munbat_ai/core/theme/app_color.dart';
-import 'package:munbat_ai/core/utils/app_extensions.dart';
 import 'package:munbat_ai/features/auth/data/repositories/auth_repository.dart';
 import 'package:munbat_ai/features/auth/presentation/widgets/header_section.dart';
 import 'package:munbat_ai/features/auth/presentation/widgets/login_form_card.dart';
@@ -48,18 +46,8 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => _isLoading = false);
 
     if (result.success) {
-      // ✅ حفظ خيار الـ keep me signed in
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('keep_signed_in', _keepMeSignedIn);
-
-      // ✅ لو مش عايز يفضل مسجل — مسح الـ token
-      // بس خليه موجود دلوقتي عشان يدخل للـ app
-      // هيتمسح لو فتح التطبيق من جديد بدون keep me signed in
-      if (!_keepMeSignedIn) {
-        await prefs.setBool('session_only', true);
-      } else {
-        await prefs.setBool('session_only', false);
-      }
 
       if (!mounted) return;
       Navigator.pushAndRemoveUntil(
@@ -82,38 +70,28 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       body: SingleChildScrollView(
-        child: Stack(
+        child: Column(
           children: [
             const HeaderSection(),
-            Positioned(
-              top: context.height * 0.3,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    LoginFormCard(
-                      formKey: _formKey,
-                      emailController: _emailController,
-                      passwordController: _passwordController,
-                      isPasswordVisible: _isPasswordVisible,
-                      keepMeSignedIn: _keepMeSignedIn,
-                      isLoading: _isLoading,
-                      onPasswordVisibilityToggle: () {
-                        setState(
-                            () => _isPasswordVisible = !_isPasswordVisible);
-                      },
-                      onKeepMeSignedInChanged: (value) {
-                        setState(() => _keepMeSignedIn = value);
-                      },
-                      onLogin: _handleLogin,
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-                ),
+            Transform.translate(
+              offset: const Offset(0, -40),
+              child: LoginFormCard(
+                formKey: _formKey,
+                emailController: _emailController,
+                passwordController: _passwordController,
+                isPasswordVisible: _isPasswordVisible,
+                keepMeSignedIn: _keepMeSignedIn,
+                isLoading: _isLoading,
+                onPasswordVisibilityToggle: () {
+                  setState(() => _isPasswordVisible = !_isPasswordVisible);
+                },
+                onKeepMeSignedInChanged: (value) {
+                  setState(() => _keepMeSignedIn = value);
+                },
+                onLogin: _handleLogin,
               ),
             ),
+            const SizedBox(height: 24),
           ],
         ),
       ),

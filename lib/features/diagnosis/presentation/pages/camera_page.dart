@@ -1,3 +1,5 @@
+// lib/features/diagnosis/presentation/pages/camera_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
@@ -7,7 +9,6 @@ import 'package:munbat_ai/features/diagnosis/presentation/widgets/camera_Initial
 import 'package:munbat_ai/features/diagnosis/presentation/widgets/camera_preview_view.dart';
 import 'package:munbat_ai/features/diagnosis/presentation/widgets/permission_denied_view.dart';
 import 'diagnosis_result_screen.dart';
-
 
 class CameraPage extends StatefulWidget {
   const CameraPage({super.key});
@@ -23,6 +24,9 @@ class _CameraScreenState extends State<CameraPage> {
   bool _isCameraInitialized = false;
   bool _cameraPermissionDenied = false;
 
+  List<CameraDescription> _cameras = []; // ✅ قائمة الكاميرات المتاحة
+  int _currentCameraIndex = 0;           // ✅ index الكاميرا الحالية
+
   @override
   void initState() {
     super.initState();
@@ -30,41 +34,56 @@ class _CameraScreenState extends State<CameraPage> {
     _initializeCamera();
   }
 
-  Future<void> _initializeCamera() async {
+  Future<void> _initializeCamera({int cameraIndex = 0}) async {
     try {
       final hasCameraPermission =
           await PermissionsHandler.requestCameraPermission();
 
       if (!hasCameraPermission) {
-        setState(() {
-          _cameraPermissionDenied = true;
-        });
+        setState(() => _cameraPermissionDenied = true);
         return;
       }
 
-      final cameras = await availableCameras();
-      if (cameras.isNotEmpty) {
+      // ✅ جيب كل الكاميرات وحفظها
+      _cameras = await availableCameras();
+
+      if (_cameras.isNotEmpty) {
+        // ✅ لو كان فيه controller قديم، نغلقه الأول
+        if (_isCameraInitialized) {
+          await _cameraController.dispose();
+        }
+
         _cameraController = CameraController(
-          cameras[0],
+          _cameras[cameraIndex],
           ResolutionPreset.high,
         );
 
         await _cameraController.initialize();
+
         if (mounted) {
           setState(() {
+            _currentCameraIndex = cameraIndex;
             _isCameraInitialized = true;
             _cameraPermissionDenied = false;
           });
         }
       }
     } catch (e) {
+      // ignore: avoid_print
       print('Error initializing camera: $e');
       if (mounted) {
-        setState(() {
-          _cameraPermissionDenied = true;
-        });
+        setState(() => _cameraPermissionDenied = true);
       }
     }
+  }
+
+  // ✅ تبديل بين الكاميرا الأمامية والخلفية
+  Future<void> _switchCamera() async {
+    if (_cameras.length < 2) return; // مفيش كاميرا تانية
+
+    final nextIndex = (_currentCameraIndex + 1) % _cameras.length;
+    setState(() => _isCameraInitialized = false); // نعرض loading
+    await _initializeCamera(cameraIndex: nextIndex);
   }
 
   Future<void> _takePicture() async {
@@ -77,17 +96,15 @@ class _CameraScreenState extends State<CameraPage> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => DiagnosisResultScreen(
-              imagePath: image.path,
-            ),
+            builder: (context) =>
+                DiagnosisResultScreen(imagePath: image.path),
           ),
         );
       }
     } catch (e) {
+      // ignore: avoid_print
       print('Error taking picture: $e');
-      if (mounted) {
-        _showErrorSnackBar('Failed to capture photo');
-      }
+      if (mounted) _showErrorSnackBar('Failed to capture photo');
     }
   }
 
@@ -107,25 +124,21 @@ class _CameraScreenState extends State<CameraPage> {
         return;
       }
 
-      final image = await _imagePicker.pickImage(
-        source: ImageSource.gallery,
-      );
+      final image = await _imagePicker.pickImage(source: ImageSource.gallery);
 
       if (image != null && mounted) {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => DiagnosisResultScreen(
-              imagePath: image.path,
-            ),
+            builder: (context) =>
+                DiagnosisResultScreen(imagePath: image.path),
           ),
         );
       }
     } catch (e) {
+      // ignore: avoid_print
       print('Error picking image: $e');
-      if (mounted) {
-        _showErrorSnackBar('Failed to pick image');
-      }
+      if (mounted) _showErrorSnackBar('Failed to pick image');
     }
   }
 
@@ -167,7 +180,7 @@ class _CameraScreenState extends State<CameraPage> {
 
   @override
   void dispose() {
-    _cameraController.dispose();
+    if (_isCameraInitialized) _cameraController.dispose();
     super.dispose();
   }
 
@@ -175,9 +188,7 @@ class _CameraScreenState extends State<CameraPage> {
   Widget build(BuildContext context) {
     if (_cameraPermissionDenied) {
       return PermissionDeniedView(
-        onOpenSettings: () {
-          PermissionsHandler.openCameraSettings();
-        },
+        onOpenSettings: () => PermissionsHandler.openCameraSettings(),
         onUseGallery: _pickImageFromGallery,
       );
     }
@@ -189,11 +200,11 @@ class _CameraScreenState extends State<CameraPage> {
     return CameraPreviewView(
       cameraController: _cameraController,
       isPhotoMode: isPhotoMode,
-      onPhotoModeChanged: (value) {
-        setState(() => isPhotoMode = value);
-      },
+      onPhotoModeChanged: (value) => setState(() => isPhotoMode = value),
       onTakePicture: _takePicture,
       onPickFromGallery: _pickImageFromGallery,
+      onSwitchCamera: _switchCamera,           // ✅ جديد
+      hasFrontCamera: _cameras.length > 1,     // ✅ نخفي الزرار لو مفيش كاميرا أمامية
       onClose: () => Navigator.pop(context),
     );
   }

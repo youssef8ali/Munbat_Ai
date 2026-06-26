@@ -7,16 +7,14 @@ import 'package:munbat_ai/core/services/api_service.dart';
 import 'package:munbat_ai/features/diagnosis/data/models/scan_result_model.dart';
 
 class ScanRepository {
-  static const String _baseUrl =
-      'https://manbatbackend-production.up.railway.app';
-
   late final Dio _dio;
   final ApiService _apiService = ApiService();
 
   ScanRepository() {
     _dio = Dio(
       BaseOptions(
-        baseUrl: _baseUrl,
+        // ✅ بقى يستخدم نفس الـ root URL الموجود في ApiService بدل رابط مختلف
+        baseUrl: ApiService.rootUrl,
         connectTimeout: const Duration(seconds: 60),
         receiveTimeout: const Duration(seconds: 60),
       ),
@@ -38,57 +36,63 @@ class ScanRepository {
   // =========================
   // SCAN IMAGE
   // POST /api/scans
-  // بيرجع: { "data": { "PlantScan": {}, "treatments": [], "Products": [] } }
   // =========================
-  Future<ScanResultModel?> scanImage(String imagePath) async {
-    try {
-      final file = File(imagePath);
-      final fileName = imagePath.split('/').last;
+ Future<ScanResultModel?> scanImage(String imagePath) async {
+  try {
+    final file = File(imagePath);
+    final fileName = imagePath.split('/').last;
 
-      final formData = FormData.fromMap({
-        'plantImage': await MultipartFile.fromFile(
-          file.path,
-          filename: fileName,
-        ),
-      });
+    final formData = FormData.fromMap({
+      'plantImage': await MultipartFile.fromFile(
+        file.path,
+        filename: fileName,
+      ),
+    });
 
-      debugPrint('SCANNING IMAGE: $imagePath');
+    final response = await _dio.post(
+      '/api/scans',
+      data: formData,
+      options: Options(contentType: 'multipart/form-data'),
+    );
 
-      final response = await _dio.post(
-        '/api/scans',
-        data: formData,
-        options: Options(
-          contentType: 'multipart/form-data',
-        ),
-      );
+    return ScanResultModel.fromJson(response.data as Map<String, dynamic>);
+  } on DioException catch (e) {
+    debugPrint('SCAN ERROR STATUS => ${e.response?.statusCode}');
+    debugPrint('SCAN ERROR DATA => ${e.response?.data}');
 
-      debugPrint('SCAN RESPONSE => ${response.data}');
-
-      return ScanResultModel.fromJson(response.data as Map<String, dynamic>);
-    } on DioException catch (e) {
-      debugPrint('SCAN ERROR STATUS => ${e.response?.statusCode}');
-      debugPrint('SCAN ERROR DATA => ${e.response?.data}');
-      return null;
-    } catch (e) {
-      debugPrint('SCAN UNEXPECTED ERROR => $e');
-      return null;
+    // ─── استخرج الـ message من الـ backend response ───
+    final errorData = e.response?.data;
+    if (errorData != null && errorData is Map) {
+      final message = errorData['message']?.toString() ??
+          errorData['error']?.toString();
+      if (message != null && message.isNotEmpty) {
+        // ارمي exception بالـ message الحقيقية بدل ما ترجع null
+        throw ScanException(message);
+      }
     }
+    return null;
+  } catch (e) {
+    if (e is ScanException) rethrow;
+    debugPrint('SCAN UNEXPECTED ERROR => $e');
+    return null;
   }
+}
 
   // =========================
   // GET ALL SCANS
-  // GET /api/scans
-  // بيرجع: { "message": "...", "data": [ { "_id": "...", "treatments": [...], ... } ] }
+  // GET /api/scans?page=&limit=
+  // response: { message, data: { scans: [...], currentPage, totalPages, totalScans } }
   // =========================
   Future<List<ScanResultModel>> getAllScans() async {
     try {
       final response = await _dio.get('/api/scans');
       debugPrint('GET SCANS RESPONSE => ${response.data}');
 
-      // الـ response دايمًا: { "message": "...", "data": [...] }
-      final List data = response.data['data'] as List? ?? [];
+      final data = response.data['data'] as Map<String, dynamic>? ?? {};
+      final List scansList = data['scans'] as List? ?? [];
 
-      return data
+      return scansList
+          .whereType<Map>()
           .map((e) => ScanResultModel.fromJson(e as Map<String, dynamic>))
           .toList();
     } on DioException catch (e) {
@@ -116,4 +120,8 @@ class ScanRepository {
       return null;
     }
   }
+}
+class ScanException implements Exception {
+  final String message;
+  ScanException(this.message);
 }

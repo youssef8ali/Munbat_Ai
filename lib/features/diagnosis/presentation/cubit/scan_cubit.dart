@@ -12,14 +12,20 @@ class ScanCubit extends Cubit<ScanState> {
   Future<void> scanImage(String imagePath) async {
     emit(ScanLoading());
 
-    final result = await _scanRepository.scanImage(imagePath);
+    try {
+      final result = await _scanRepository.scanImage(imagePath);
 
-    if (result == null) {
+      if (result == null) {
+        emit(ScanError('Could not analyze the image. Please try again.'));
+        return;
+      }
+
+      emit(ScanSuccess(result));
+    } on ScanException catch (e) {
+      emit(ScanError(e.message));
+    } catch (e) {
       emit(ScanError('Could not analyze the image. Please try again.'));
-      return;
     }
-
-    emit(ScanSuccess(result));
   }
 
   void reset() => emit(ScanInitial());

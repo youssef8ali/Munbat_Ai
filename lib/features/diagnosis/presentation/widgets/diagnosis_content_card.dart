@@ -1,5 +1,6 @@
 // lib/features/diagnosis/presentation/widgets/diagnosis_content_card.dart
-
+import 'package:munbat_ai/features/store/data/models/store_models.dart';
+import 'package:munbat_ai/features/store/presentation/pages/product_details_page.dart';
 import 'package:flutter/material.dart';
 import 'package:munbat_ai/core/constants/app_constants.dart';
 import 'package:munbat_ai/core/theme/app_color.dart';
@@ -47,7 +48,6 @@ class DiagnosisContentCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ✅ اسم المرض الحقيقي من الـ API
           DiagnosisTitleRow(
             diseaseName: scan.isHealthy
                 ? 'Healthy Plant'
@@ -56,16 +56,14 @@ class DiagnosisContentCard extends StatelessWidget {
 
           SizedBox(height: AppConstants.paddingMedium),
 
-          // ✅ badge — لو في أكتر من مرض بيعرض عددهم
           DiagnosisBadgeRow(
-            confidence: 0, // مفيش confidence في الـ response
+            confidence: 0,
             isHealthy: scan.isHealthy,
             diseaseCount: scan.diseases.length,
           ),
 
           SizedBox(height: AppConstants.paddingLarge),
 
-          // ✅ كل الأمراض المكتشفة
           DiagnosisSectionHeader(),
           SizedBox(height: AppConstants.paddingSmall),
 
@@ -75,7 +73,6 @@ class DiagnosisContentCard extends StatelessWidget {
                   'Your plant appears to be in great health! Keep up the good care and monitor it regularly.',
             )
           else
-            // ✅ بيعرض كل مرض باسمه ووصفه من الـ API
             ...scan.diseases.map(
               (disease) => Padding(
                 padding:
@@ -88,12 +85,10 @@ class DiagnosisContentCard extends StatelessWidget {
 
           SizedBox(height: AppConstants.paddingLarge),
 
-          // ✅ Treatment Plan
           if (!scan.isHealthy) ...[
             TreatmentPlanHeader(),
             SizedBox(height: AppConstants.paddingMedium),
 
-            // ✅ الـ treatments من الـ API باسم العلاج والـ instructions
             ...treatments.map(
               (t) => Padding(
                 padding:
@@ -119,15 +114,13 @@ class DiagnosisContentCard extends StatelessWidget {
 
             SizedBox(height: AppConstants.paddingLarge),
 
-            // ✅ Products من الـ API
             if (products.isNotEmpty) ...[
               Text('Recommended Products', style: AppTextStyles.h2),
               SizedBox(height: AppConstants.paddingMedium),
-              ...products.map((p) => _buildProductItem(p)),
+              ...products.map((p) => _buildProductItem(context, p)),
               SizedBox(height: AppConstants.paddingLarge),
             ],
 
-            // Buy button
             BuyTreatmentButton(onPressed: onBuyTreatment),
           ],
         ],
@@ -135,80 +128,227 @@ class DiagnosisContentCard extends StatelessWidget {
     );
   }
 
-  Widget _buildProductItem(ProductModel product) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+  Widget _buildProductItem(BuildContext context, ProductModel product) {
+    final bool isOutOfStock = product.status.toLowerCase() == 'out_of_stock';
+    final bool isLowStock = product.status.toLowerCase() == 'low_stock';
+    final bool hasDiscount =
+        product.discount > 0 && product.discountedPrice < product.price;
+
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ProductDetailsPage(product: product),
+        ),
       ),
-      child: Row(
-        children: [
-          // ✅ صورة المنتج من Cloudinary
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: product.imageUrl.isNotEmpty
-                ? Image.network(
-                    product.imageUrl,
-                    width: 70,
-                    height: 70,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _buildPlaceholder(),
-                  )
-                : _buildPlaceholder(),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: AppColors.primary.withOpacity(0.15),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  product.name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  '\$${product.price.toStringAsFixed(2)}',
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${product.quantity} in stock',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              // ─── صورة المنتج + Discount Badge ───────────────────
+              Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: ColorFiltered(
+                      colorFilter: isOutOfStock
+                          ? const ColorFilter.matrix([
+                              0.2126, 0.7152, 0.0722, 0, 0,
+                              0.2126, 0.7152, 0.0722, 0, 0,
+                              0.2126, 0.7152, 0.0722, 0, 0,
+                              0,      0,      0,      1, 0,
+                            ])
+                          : const ColorFilter.mode(
+                              Colors.transparent, BlendMode.multiply),
+                      child: product.imageUrl.isNotEmpty
+                          ? Image.network(
+                              product.imageUrl,
+                              width: 72,
+                              height: 72,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => _buildPlaceholder(),
+                            )
+                          : _buildPlaceholder(),
+                    ),
+                  ),
+
+                  // ─── Discount Badge فوق الصورة ───────────────────
+                  if (hasDiscount)
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 5, vertical: 2),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(10),
+                            bottomRight: Radius.circular(8),
+                          ),
+                        ),
+                        child: Text(
+                          '-${product.discount}%',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+
+              const SizedBox(width: 12),
+
+              // ─── المعلومات ────────────────────────────────────────
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      product.name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        letterSpacing: -0.2,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+
+                    const SizedBox(height: 6),
+
+                    // ─── السعر (مع الخصم أو بدونه) ──────────────────
+                    if (hasDiscount) ...[
+                      Text(
+                        '\$${product.discountedPrice.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '\$${product.price.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          decoration: TextDecoration.lineThrough,
+                          decorationColor: Colors.grey,
+                        ),
+                      ),
+                    ] else ...[
+                      Text(
+                        '\$${product.price.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                    ],
+
+                    const SizedBox(height: 5),
+
+                    // ─── Stock Status ─────────────────────────────────
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: isOutOfStock
+                            ? const Color(0xFFFF3B30).withOpacity(0.1)
+                            : isLowStock
+                                ? const Color(0xFFFF9500).withOpacity(0.1)
+                                : const Color(0xFF34C759).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isOutOfStock
+                                ? Icons.remove_circle_outline_rounded
+                                : isLowStock
+                                    ? Icons.warning_amber_rounded
+                                    : Icons.check_circle_outline_rounded,
+                            size: 10,
+                            color: isOutOfStock
+                                ? const Color(0xFFFF3B30)
+                                : isLowStock
+                                    ? const Color(0xFFE08800)
+                                    : const Color(0xFF2AA64A),
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            isOutOfStock
+                                ? 'Out of Stock'
+                                : isLowStock
+                                    ? 'Low Stock'
+                                    : 'In Stock',
+                            style: TextStyle(
+                              color: isOutOfStock
+                                  ? const Color(0xFFFF3B30)
+                                  : isLowStock
+                                      ? const Color(0xFFE08800)
+                                      : const Color(0xFF2AA64A),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // ─── سهم للدلالة على إمكانية الضغط ──────────────────
+              const SizedBox(width: 8),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.primary.withOpacity(0.5),
+                size: 20,
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildPlaceholder() {
     return Container(
-      width: 70,
-      height: 70,
+      width: 72,
+      height: 72,
       decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(8),
+        color: AppColors.primary.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Icon(
         Icons.medical_services_outlined,
-        color: AppColors.textSecondary,
+        color: AppColors.primary.withOpacity(0.5),
         size: 28,
       ),
     );

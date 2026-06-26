@@ -22,19 +22,28 @@ class WelcomeScreen extends StatelessWidget {
           ),
         ),
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              children: [
-                const Spacer(flex: 2),
-                const ModernWelcomeLogo(),
-                const SizedBox(height: 48),
-                const ModernWelcomeText(),
-                const Spacer(flex: 3),
-                const ModernWelcomeButtons(),
-                const SizedBox(height: 40),
-              ],
-            ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight,
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const ModernWelcomeLogo(),
+                      const SizedBox(height: 48),
+                      const ModernWelcomeText(),
+                      const SizedBox(height: 40),
+                      const ModernWelcomeButtons(),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
         ),
       ),

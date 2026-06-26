@@ -15,16 +15,16 @@ void main() async {
 
   final token = await apiService.getToken();
   final keepSignedIn = prefs.getBool('keep_signed_in') ?? false;
-  final sessionOnly = prefs.getBool('session_only') ?? false;
 
   bool isLoggedIn = false;
 
   if (token != null && token.isNotEmpty) {
-    if (sessionOnly && !keepSignedIn) {
+    if (keepSignedIn) {
+      isLoggedIn = true;
+    } else {
+      // مفيش "keep me signed in" => امسح التوكن في أول تشغيل جديد للتطبيق
       await apiService.clearToken();
       isLoggedIn = false;
-    } else {
-      isLoggedIn = true;
     }
   }
 

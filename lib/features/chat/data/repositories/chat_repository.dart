@@ -6,7 +6,7 @@ import 'package:munbat_ai/core/services/api_service.dart';
  
 class ChatRepository {
   static const String _baseUrl =
-      'https://manbatbackend-production.up.railway.app';
+      'https://manbut2-production.up.railway.app';
  
   late final Dio _dio;
   final ApiService _apiService = ApiService();
