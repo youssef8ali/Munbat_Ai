@@ -141,6 +141,19 @@ class ApiService {
         'newPassword': newPassword,
       });
 
+  // ─── Email Verification ───────────────────────────────────────────────────
+
+  Future<Response> verifyEmail({
+    required String email,
+    required String token,
+  }) async =>
+      _dio.post('/authentication/verify-email',
+          data: {'email': email, 'token': token});
+
+  Future<Response> resendVerificationEmail({required String email}) async =>
+      _dio.post('/authentication/resend-verification-email',
+          data: {'email': email});
+
   // ─── Profile ──────────────────────────────────────────────────────────────
 
   Future<Response> getProfile() async => _dio.get('/user/profile');

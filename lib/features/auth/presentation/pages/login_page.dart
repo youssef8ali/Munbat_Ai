@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:munbat_ai/core/theme/app_color.dart';
 import 'package:munbat_ai/features/auth/data/repositories/auth_repository.dart';
+import 'package:munbat_ai/features/auth/presentation/pages/email_verification_page.dart';
 import 'package:munbat_ai/features/auth/presentation/widgets/header_section.dart';
 import 'package:munbat_ai/features/auth/presentation/widgets/login_form_card.dart';
 import 'package:munbat_ai/features/home/presentation/pages/main_navigation_page.dart';
@@ -56,12 +57,26 @@ class _LoginPageState extends State<LoginPage> {
         (route) => false,
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result.message ?? 'An error occurred, please try again'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      final msg = result.message ?? '';
+
+      // ✅ لو الـ API رجّع رسالة إن الـ email مش verified، روح لصفحة الـ Verification
+      if (msg.toLowerCase().contains('verify')) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => EmailVerificationPage(
+              email: _emailController.text.trim(),
+            ),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(msg.isNotEmpty ? msg : 'An error occurred, please try again'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 

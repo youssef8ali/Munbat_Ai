@@ -1,9 +1,11 @@
+// lib/features/auth/presentation/pages/sign_up_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:munbat_ai/core/theme/app_color.dart';
 import 'package:munbat_ai/features/auth/data/repositories/auth_repository.dart';
+import 'package:munbat_ai/features/auth/presentation/pages/email_verification_page.dart';
 import 'package:munbat_ai/features/auth/presentation/widgets/header_section.dart';
 import 'package:munbat_ai/features/auth/presentation/widgets/signup_form_card.dart';
-import 'package:munbat_ai/features/home/presentation/pages/main_navigation_page.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -61,16 +63,14 @@ class _SignUpPageState extends State<SignUpPage> {
     setState(() => _isLoading = false);
 
     if (result.success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Account created successfully'),
-          backgroundColor: Colors.green,
-        ),
-      );
-      Navigator.pushAndRemoveUntil(
+      // ✅ بعد الـ register مباشرةً روح لصفحة الـ Email Verification
+      Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => const MainNavigationPage()),
-        (route) => false,
+        MaterialPageRoute(
+          builder: (_) => EmailVerificationPage(
+            email: _emailController.text.trim(),
+          ),
+        ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(

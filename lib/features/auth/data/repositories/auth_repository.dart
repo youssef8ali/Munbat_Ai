@@ -156,6 +156,50 @@ class AuthRepository {
     }
   }
 
+  // ─── Verify Email ──────────────────────────────────────────────────────────
+
+  Future<AuthResult> verifyEmail({
+    required String email,
+    required String token,
+  }) async {
+    try {
+      final response =
+          await _apiService.verifyEmail(email: email, token: token);
+      final data = response.data;
+
+      final authToken = data['token'] as String?;
+      if (authToken != null) await _apiService.saveToken(authToken);
+
+      return AuthResult(
+        success: true,
+        message: data['message'] ?? 'Email verified successfully',
+        token: authToken,
+      );
+    } on DioException catch (e) {
+      return AuthResult(success: false, message: _extractErrorMessage(e));
+    } catch (_) {
+      return AuthResult(success: false, message: 'An unexpected error occurred');
+    }
+  }
+
+  // ─── Resend Verification Email ─────────────────────────────────────────────
+
+  Future<AuthResult> resendVerificationEmail({required String email}) async {
+    try {
+      final response =
+          await _apiService.resendVerificationEmail(email: email);
+      return AuthResult(
+        success: true,
+        message:
+            response.data['message'] ?? 'Verification email sent successfully',
+      );
+    } on DioException catch (e) {
+      return AuthResult(success: false, message: _extractErrorMessage(e));
+    } catch (_) {
+      return AuthResult(success: false, message: 'An unexpected error occurred');
+    }
+  }
+
   // ─── Get Profile ──────────────────────────────────────────────────────────
 
   Future<AuthResult> getProfile() async {
@@ -212,11 +256,10 @@ class AuthRepository {
 
   // ─── Delete Account ───────────────────────────────────────────────────────
 
-  /// DELETE /user/profile — حذف الحساب نهائياً ومسح الـ token
   Future<AuthResult> deleteAccount() async {
     try {
       final response = await _apiService.deleteAccount();
-      await _apiService.clearToken(); // ✅ مسح الـ token بعد الحذف
+      await _apiService.clearToken();
       return AuthResult(
         success: true,
         message: response.data['message'] ?? 'Account deleted successfully',

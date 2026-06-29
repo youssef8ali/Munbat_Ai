@@ -7,9 +7,9 @@ import 'package:munbat_ai/core/theme/app_text_styles.dart';
 import 'package:munbat_ai/features/chat/data/repositories/chat_repository.dart';
 import 'package:munbat_ai/features/chat/presentation/cubit/chat_cubit.dart';
 import 'package:munbat_ai/features/chat/presentation/cubit/chat_state.dart';
+import 'package:munbat_ai/features/chat/presentation/pages/chat_history_page.dart';
 import 'package:munbat_ai/features/chat/presentation/widgets/QuickActionButton.dart';
 import 'package:munbat_ai/features/chat/presentation/widgets/chat_message.dart';
-
 import 'package:munbat_ai/features/chat/presentation/widgets/typing_indicator.dart';
 
 class ChatPage extends StatelessWidget {
@@ -18,7 +18,9 @@ class ChatPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
+      // ✅ lazy: false عشان الـ cubit يتعمل فور ما الـ widget يتبني
       create: (_) => ChatCubit(ChatRepository()),
+      lazy: false,
       child: const _ChatView(),
     );
   }
@@ -34,8 +36,6 @@ class _ChatView extends StatefulWidget {
 class _ChatViewState extends State<_ChatView> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-
-  // لو اليوزر سحب لفوق بنفسه، وقف الـ auto scroll
   bool _userScrolledUp = false;
 
   @override
@@ -45,21 +45,14 @@ class _ChatViewState extends State<_ChatView> {
     super.dispose();
   }
 
-  // بنكتشف سحب اليوزر الحقيقي فورًا لحظة بدايته (مش بعد ما يتحرك)
-  // عشان نلحق نوقف الـ auto-scroll قبل ما الستريمنج يعمل jumpTo تاني
   bool _onScrollNotification(ScrollNotification notification) {
     if (notification is ScrollStartNotification &&
         notification.dragDetails != null) {
-      // لمسة سحب حقيقية من اليوزر — وقف المتابعة التلقائية فورًا
-      if (!_userScrolledUp) {
-        setState(() => _userScrolledUp = true);
-      }
+      if (!_userScrolledUp) setState(() => _userScrolledUp = true);
     } else if (notification is ScrollEndNotification) {
-      // لما اليوزر يسيب السحب، شوف لو رجع لقرب الآخر بنفسه
       if (_scrollController.hasClients) {
         final pos = _scrollController.position;
-        final isAtBottom = pos.pixels >= pos.maxScrollExtent - 40;
-        if (isAtBottom && _userScrolledUp) {
+        if (pos.pixels >= pos.maxScrollExtent - 40 && _userScrolledUp) {
           setState(() => _userScrolledUp = false);
         }
       }
@@ -68,13 +61,9 @@ class _ChatViewState extends State<_ChatView> {
   }
 
   void _scrollToBottom() {
-    // متنزلش لو اليوزر سحب لفوق بنفسه
     if (_userScrolledUp) return;
-
     if (_scrollController.hasClients) {
-      _scrollController.jumpTo(
-        _scrollController.position.maxScrollExtent,
-      );
+      _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
     }
   }
 
@@ -82,9 +71,29 @@ class _ChatViewState extends State<_ChatView> {
     final text = quickMessage ?? _messageController.text.trim();
     if (text.isEmpty) return;
     _messageController.clear();
-    // لما يبعت رسالة، ارجع للأسفل تلقائي
     setState(() => _userScrolledUp = false);
     context.read<ChatCubit>().sendMessage(text);
+  }
+
+  Future<void> _openHistory(BuildContext context) async {
+    // ✅ نحفظ reference للـ cubit قبل الـ navigation
+    // عشان لو الـ widget اتغير مش نلاقي context قديم
+    final cubit = context.read<ChatCubit>();
+
+    final selectedChatId = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (_) => const ChatHistoryPage()),
+    );
+
+    // ✅ نتأكد إن الـ widget لسه موجود قبل نعمل أي حاجة
+    if (!mounted) return;
+    if (selectedChatId == null) return;
+
+    cubit.loadChat(selectedChatId);
+    setState(() => _userScrolledUp = false);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _scrollToBottom();
+    });
   }
 
   @override
@@ -94,34 +103,69 @@ class _ChatViewState extends State<_ChatView> {
       appBar: AppBar(
         backgroundColor: AppColors.white,
         elevation: 0,
-        title: Text(
-          'Munbat Chat',
-          style: Theme.of(context)
-              .textTheme
-              .headlineSmall
-              ?.copyWith(fontWeight: FontWeight.w700),
+        title: BlocBuilder<ChatCubit, ChatState>(
+          builder: (context, state) {
+            final chatId = state is ChatLoaded ? state.currentChatId : null;
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Munbat Chat',
+                  style: Theme.of(context)
+                      .textTheme
+                      .headlineSmall
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                if (chatId != null)
+                  Text(
+                    '#${chatId.length >= 6 ? chatId.substring(chatId.length - 6) : chatId}',
+                    style: AppTextStyles.caption
+                        .copyWith(color: AppColors.textSecondary),
+                  ),
+              ],
+            );
+          },
         ),
-       actions: [
-  _AnimatedIconButton(
-    icon: Icons.refresh,
-    color: AppColors.textSecondary,
-    tooltip: 'New Chat',
-    onPressed: () => context.read<ChatCubit>().clearChat(),
-  ),
-],
+        centerTitle: true,
+        // ✅ history على الشمال دايماً بغض النظر عن الـ TextDirection
+        leading: IconButton(
+          icon: const Icon(Icons.history, color: AppColors.textSecondary),
+          tooltip: 'Chat History',
+          onPressed: () => _openHistory(context),
+        ),
+        actions: [
+          _AnimatedIconButton(
+            icon: Icons.refresh,
+            color: AppColors.textSecondary,
+            tooltip: 'New Chat',
+            onPressed: () => context.read<ChatCubit>().clearChat(),
+          ),
+        ],
       ),
       body: BlocConsumer<ChatCubit, ChatState>(
         listener: (context, state) {
           if (state is ChatLoaded) _scrollToBottom();
         },
         builder: (context, state) {
+          if (state is ChatLoading) {
+            return const Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Loading chat...'),
+                ],
+              ),
+            );
+          }
+
           if (state is! ChatLoaded) return const SizedBox.shrink();
 
           return Stack(
             children: [
               Column(
                 children: [
-                  // Timestamp
                   Padding(
                     padding: const EdgeInsets.all(16),
                     child: Text(
@@ -130,8 +174,6 @@ class _ChatViewState extends State<_ChatView> {
                           .copyWith(color: AppColors.textSecondary),
                     ),
                   ),
-
-                  // Messages
                   Expanded(
                     child: NotificationListener<ScrollNotification>(
                       onNotification: _onScrollNotification,
@@ -141,8 +183,7 @@ class _ChatViewState extends State<_ChatView> {
                         itemCount:
                             state.messages.length + (state.isTyping ? 1 : 0),
                         itemBuilder: (context, index) {
-                          if (state.isTyping &&
-                              index == state.messages.length) {
+                          if (state.isTyping && index == state.messages.length) {
                             return const TypingIndicator();
                           }
                           return ChatMessageWidget(
@@ -151,8 +192,6 @@ class _ChatViewState extends State<_ChatView> {
                       ),
                     ),
                   ),
-
-                  // Quick Actions
                   Padding(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 8),
@@ -180,8 +219,6 @@ class _ChatViewState extends State<_ChatView> {
                       ],
                     ),
                   ),
-
-                  // Input Field
                   Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 12),
@@ -240,8 +277,6 @@ class _ChatViewState extends State<_ChatView> {
                   ),
                 ],
               ),
-
-              // زر "انزل للأسفل" لما اليوزر يكون فوق
               if (_userScrolledUp)
                 Positioned(
                   bottom: 140,
@@ -250,9 +285,8 @@ class _ChatViewState extends State<_ChatView> {
                     backgroundColor: AppColors.primary,
                     onPressed: () {
                       setState(() => _userScrolledUp = false);
-                      _scrollController.jumpTo(
-                        _scrollController.position.maxScrollExtent,
-                      );
+                      _scrollController
+                          .jumpTo(_scrollController.position.maxScrollExtent);
                     },
                     child: const Icon(Icons.keyboard_arrow_down,
                         color: AppColors.white),
@@ -266,7 +300,8 @@ class _ChatViewState extends State<_ChatView> {
   }
 }
 
-// ─── Reusable Animated Icon Button ─────────────────────────────────────────
+// ─── Animated Icon Button ─────────────────────────────────────────────────────
+
 class _AnimatedIconButton extends StatefulWidget {
   final IconData icon;
   final Color color;
